@@ -219,14 +219,14 @@ agent_is_running() {
 menu_agent() {
     while true; do
         local choice
-        choice=$(tui menu "🤖  SSH-Agent" 18 64 6 \
-            "1" "ℹ   Status anzeigen                 [i]" \
-            "2" "▶   Agent starten                   [s]" \
-            "3" "➕  Key zum Agent hinzufügen         [a]" \
-            "4" "📋  Geladene Keys anzeigen           [l]" \
-            "5" "⚙   Auto-Load konfigurieren         [c]" \
-            "6" "⏹   Agent stoppen                   [x]" \
-            "0" "◀   Zurück") || return
+        choice=$(tui menu "SSH-Agent" 18 86 6 \
+            "1" "$(printf '%-68s%s' 'Status anzeigen'           '[i]')" \
+            "2" "$(printf '%-68s%s' 'Agent starten'             '[s]')" \
+            "3" "$(printf '%-68s%s' 'Key zum Agent hinzufuegen' '[a]')" \
+            "4" "$(printf '%-68s%s' 'Geladene Keys anzeigen'    '[l]')" \
+            "5" "$(printf '%-68s%s' 'Auto-Load konfigurieren'   '[c]')" \
+            "6" "$(printf '%-68s%s' 'Agent stoppen'             '[x]')" \
+            "0" "Zurueck") || return
         case "$choice" in
             1) agent_status          ;;
             2) agent_start           ;;
@@ -456,27 +456,53 @@ list_keys_plain() {
 show_banner() {
     clear
     local key_count srv_count last_mod hn un
+    local sys_time sys_up sys_ip sys_os
     key_count="$(count_keys)"
     srv_count="$(count_servers)"
     last_mod="$(last_modified)"
     hn="$(hostname -s 2>/dev/null || hostname)"
     un="${DEFAULT_USER:-${USER:-'?'}}"
 
+    # Systeminfos (OS-portabel)
+    sys_time="$(date '+%d.%m.%Y %H:%M:%S' 2>/dev/null || echo '–')"
+    if [[ "$OS" == "Darwin" ]]; then
+        sys_os="macOS $(sw_vers -productVersion 2>/dev/null)"
+        sys_up="$(uptime 2>/dev/null | sed 's/.*up \([^,]*\).*/\1/' | xargs || echo '–')"
+        sys_ip="$(ipconfig getifaddr en0 2>/dev/null \
+                  || ipconfig getifaddr en1 2>/dev/null || echo '–')"
+    else
+        sys_os="$(grep '^PRETTY_NAME' /etc/os-release 2>/dev/null \
+                  | cut -d= -f2 | tr -d '"' || uname -sr)"
+        sys_up="$(uptime -p 2>/dev/null | sed 's/^up //' \
+                  || uptime 2>/dev/null | sed 's/.*up \([^,]*\).*/\1/' | xargs)"
+        sys_ip="$(hostname -I 2>/dev/null | awk '{print $1}' || echo '–')"
+    fi
+    [[ -z "${sys_up:-}" ]] && sys_up="–"
+    [[ -z "${sys_ip:-}" ]] && sys_ip="–"
+    [[ -z "${sys_os:-}" ]] && sys_os="$(uname -sr)"
+
     echo -e "${C_BLU}${B}"
-    cat << 'BANNER'
-  ███████╗███████╗██╗  ██╗    ████████╗██╗   ██╗██╗
-  ██╔════╝██╔════╝██║  ██║    ╚══██╔══╝██║   ██║██║
-  ███████╗███████╗███████║       ██║   ██║   ██║██║
-  ╚════██║╚════██║██╔══██║       ██║   ██║   ██║██║
-  ███████║███████║██║  ██║       ██║   ╚██████╔╝██║
-  ╚══════╝╚══════╝╚═╝  ╚═╝       ╚═╝    ╚═════╝ ╚═╝
+    cat << 'BANNER'                                                                                      
+  _____ _____ __ __         ______  __ __  ____ 
+ / ___// ___/|  T  T       |      T|  T  Tl    j
+(   \_(   \_ |  l  | _____ |      ||  |  | |  T 
+ \__  T\__  T|  _  ||     |l_j  l_j|  |  | |  | 
+ /  \ |/  \ ||  |  |l_____j  |  |  |  :  | |  | 
+ \    |\    ||  |  |         |  |  l     | j  l 
+  \___j \___jl__j__j         l__j   \__,_j|____j
 BANNER
     echo -e "${R}"
-    echo -e "  ${C_GRY}══════════════════════════════════════════════════════${R}"
-    printf "  ${C_CYN}👤 Benutzer  ${R}${B}%-22s${R}  ${C_CYN}🖥  Host      ${R}${B}%s${R}\n" "$un" "$hn"
-    printf "  ${C_YLW}🔑 Keys      ${R}${B}%-22s${R}  ${C_YLW}🕒 Geändert   ${R}%s\n" "$key_count" "$last_mod"
-    printf "  ${C_MAG}🖥  Server    ${R}${B}%-22s${R}  ${C_GRN}📁 SSH-Dir    ${R}${C_GRY}%s${R}\n" "$srv_count" "$SSH_DIR"
-    echo -e "  ${C_GRY}══════════════════════════════════════════════════════${R}"
+    echo -e "  ${C_GRY}SSH Key & Host Manager  —  Terminal UI fuer macOS & Linux  —  v${VERSION}${R}"
+    echo ""
+    echo -e "  ${C_GRY}══════════════════════════════════════════════════════════════════════${R}"
+    printf "  ${C_CYN}Benutzer   ${R}${B}%-24s${R}  ${C_CYN}Host         ${R}${B}%s${R}\n" "$un" "$hn"
+    printf "  ${C_YLW}Keys       ${R}${B}%-24s${R}  ${C_YLW}Geaendert    ${R}%s\n" "$key_count" "$last_mod"
+    printf "  ${C_MAG}Server     ${R}${B}%-24s${R}  ${C_GRN}SSH-Dir      ${R}${C_GRY}%s${R}\n" "$srv_count" "$SSH_DIR"
+    echo -e "  ${C_GRY}──────────────────────────────────────────────────────────────────────${R}"
+    printf "  ${C_ORG}OS         ${R}%-30s  ${C_ORG}Kernel       ${R}%s\n" "${sys_os:0:28}" "$(uname -r 2>/dev/null | cut -d- -f1)"
+    printf "  ${C_ORG}Uptime     ${R}%-30s  ${C_ORG}IP           ${R}%s\n" "${sys_up:0:28}" "$sys_ip"
+    printf "  ${C_GRY}uname      ${R}%-30s  ${C_GRY}Zeit         ${R}%s\n" "$(uname -srm 2>/dev/null | cut -c1-28)" "$sys_time"
+    echo -e "  ${C_GRY}══════════════════════════════════════════════════════════════════════${R}"
     echo ""
 }
 
@@ -488,15 +514,15 @@ menu_main() {
     while true; do
         show_banner
         local choice
-        choice=$(tui menu "🔐  Hauptmenü" 20 66 8 \
-            "1" "🔑  SSH-Keys verwalten              [k]" \
-            "2" "🖥   Server-Liste                    [s]" \
-            "3" "🚀  Verbinden                       [v]" \
-            "4" "✨  Neuen Key generieren             [g]" \
-            "5" "🌐  known_hosts verwalten            [h]" \
-            "6" "🤖  SSH-Agent                        [a]" \
-            "7" "⚙   Einstellungen                   [e]" \
-            "0" "🚪  Beenden                          [q]") || break
+        choice=$(tui menu "Hauptmenue" 20 86 8 \
+            "1" "$(printf '%-68s%s' 'SSH-Keys verwalten'    '[k]')" \
+            "2" "$(printf '%-68s%s' 'Server-Liste'          '[s]')" \
+            "3" "$(printf '%-68s%s' 'Verbinden'             '[v]')" \
+            "4" "$(printf '%-68s%s' 'Neuen Key generieren'  '[g]')" \
+            "5" "$(printf '%-68s%s' 'known_hosts verwalten' '[h]')" \
+            "6" "$(printf '%-68s%s' 'SSH-Agent'             '[a]')" \
+            "7" "$(printf '%-68s%s' 'Einstellungen'         '[e]')" \
+            "0" "$(printf '%-68s%s' 'Beenden'               '[q]')") || break
         case "$choice" in
             1) menu_keys     ;;
             2) menu_servers  ;;
@@ -519,13 +545,13 @@ menu_main() {
 menu_keys() {
     while true; do
         local choice
-        choice=$(tui menu "🔑  SSH-Keys verwalten" 16 66 6 \
-            "1" "📋  Alle Keys auflisten              [l]" \
-            "2" "✅  Key prüfen / testen              [p]" \
-            "3" "🚀  Key auf Server deployen          [d]" \
-            "4" "📤  Public Key kopieren              [c]" \
-            "5" "🗑   Key löschen                     [x]" \
-            "0" "◀   Zurück") || return
+        choice=$(tui menu "SSH-Keys verwalten" 16 86 6 \
+            "1" "$(printf '%-68s%s' 'Alle Keys auflisten'     '[l]')" \
+            "2" "$(printf '%-68s%s' 'Key pruefen / testen'    '[p]')" \
+            "3" "$(printf '%-68s%s' 'Key auf Server deployen' '[d]')" \
+            "4" "$(printf '%-68s%s' 'Public Key kopieren'     '[c]')" \
+            "5" "$(printf '%-68s%s' 'Key loeschen'            '[x]')" \
+            "0" "Zurueck") || return
         case "$choice" in
             1) show_key_list_dialog ;;
             2) verify_key           ;;
@@ -746,12 +772,12 @@ menu_servers() {
     while true; do
         local count; count="$(count_servers)"
         local choice
-        choice=$(tui menu "🖥   Server-Liste  (${count} Einträge)" 16 66 5 \
-            "1" "📋  Alle Server anzeigen             [l]" \
-            "2" "➕  Server hinzufügen                [n]" \
-            "3" "✏   Server bearbeiten                [e]" \
-            "4" "🗑   Server löschen                  [x]" \
-            "0" "◀   Zurück") || return
+        choice=$(tui menu "Server-Liste  (${count} Eintraege)" 16 86 5 \
+            "1" "$(printf '%-68s%s' 'Alle Server anzeigen' '[l]')" \
+            "2" "$(printf '%-68s%s' 'Server hinzufuegen'   '[n]')" \
+            "3" "$(printf '%-68s%s' 'Server bearbeiten'    '[e]')" \
+            "4" "$(printf '%-68s%s' 'Server loeschen'      '[x]')" \
+            "0" "Zurueck") || return
         case "$choice" in
             1) show_server_list ;;
             2) add_server       ;;
@@ -850,10 +876,10 @@ menu_connect() {
     if [[ -f "$SERVERS_FILE" ]] && \
        grep -q -v '^#\|^[[:space:]]*$' "$SERVERS_FILE" 2>/dev/null; then
         local src
-        src=$(tui menu "🚀  Verbinden" 12 62 3 \
-            "1" "🖥   Aus Server-Liste wählen" \
-            "2" "✏   Manuell eingeben" \
-            "0" "◀   Zurück") || return
+        src=$(tui menu "Verbinden" 12 86 3 \
+            "1" "$(printf '%-68s%s' 'Aus Server-Liste waehlen' '[l]')" \
+            "2" "$(printf '%-68s%s' 'Manuell eingeben'         '[m]')" \
+            "0" "Zurueck") || return
         case "$src" in
             1)
                 local srv; srv=$(_pick_server "🚀  Server zum Verbinden wählen") || return
@@ -906,11 +932,11 @@ menu_connect() {
 
 menu_generate() {
     local key_type
-    key_type=$(tui menu "✨  Key-Typ wählen" 14 66 4 \
-        "ed25519" "🔐 Ed25519   — modern, kompakt, empfohlen" \
-        "rsa"     "🔑 RSA 4096  — klassisch, weit verbreitet" \
-        "ecdsa"   "🔷 ECDSA     — Elliptische Kurve (NIST)" \
-        "dsa"     "⚠  DSA       — veraltet, nicht empfohlen") || return
+    key_type=$(tui menu "Key-Typ waehlen" 14 86 4 \
+        "ed25519" "$(printf '%-68s' 'Ed25519   -- modern, kompakt, empfohlen')" \
+        "rsa"     "$(printf '%-68s' 'RSA 4096  -- klassisch, weit verbreitet')" \
+        "ecdsa"   "$(printf '%-68s' 'ECDSA     -- Elliptische Kurve (NIST)')" \
+        "dsa"     "$(printf '%-68s' 'DSA       -- veraltet, nicht empfohlen')") || return
 
     local default_name="${KEY_PREFIX}${key_type}${KEY_SUFFIX}"
     local key_name
@@ -955,10 +981,10 @@ menu_hosts() {
         [[ -f "$hosts_file" ]] && \
             count=$(grep -v '^#\|^[[:space:]]*$' "$hosts_file" 2>/dev/null | wc -l | tr -d ' \t')
         local choice
-        choice=$(tui menu "🌐  known_hosts  (${count} Einträge)" 14 64 3 \
-            "1" "📋  Tabellarisch anzeigen            [l]" \
-            "2" "🗑   Eintrag entfernen               [x]" \
-            "0" "◀   Zurück") || return
+        choice=$(tui menu "known_hosts  (${count} Eintraege)" 14 86 3 \
+            "1" "$(printf '%-68s%s' 'Tabellarisch anzeigen' '[l]')" \
+            "2" "$(printf '%-68s%s' 'Eintrag entfernen'     '[x]')" \
+            "0" "Zurueck") || return
         case "$choice" in
             1) show_known_hosts_table "$hosts_file" ;;
             2) remove_known_host      "$hosts_file" ;;
@@ -1018,15 +1044,15 @@ remove_known_host() {
 menu_settings() {
     while true; do
         local choice
-        choice=$(tui menu "⚙   Einstellungen" 24 72 8 \
-            "1" "👤  Standard-Benutzer    [${DEFAULT_USER:-–}]" \
-            "2" "🖥   Standard-Host        [${DEFAULT_HOST:-–}]" \
-            "3" "🏷   Key-Präfix           [${KEY_PREFIX:-–}]" \
-            "4" "🏷   Key-Suffix           [${KEY_SUFFIX:-–}]" \
-            "5" "📁  SSH-Verzeichnis      [${SSH_DIR}]" \
-            "6" "🔑  Standard-Key         [${DEFAULT_KEY:-–}]" \
-            "7" "🔗  Alias einrichten" \
-            "0" "◀   Zurück") || return
+        choice=$(tui menu "Einstellungen" 24 86 8 \
+            "1" "$(printf '%-44s [%s]' 'Standard-Benutzer'   "${DEFAULT_USER:--}")" \
+            "2" "$(printf '%-44s [%s]' 'Standard-Host'       "${DEFAULT_HOST:--}")" \
+            "3" "$(printf '%-44s [%s]' 'Key-Praefix'         "${KEY_PREFIX:--}")" \
+            "4" "$(printf '%-44s [%s]' 'Key-Suffix'          "${KEY_SUFFIX:--}")" \
+            "5" "$(printf '%-44s [%s]' 'SSH-Verzeichnis'     "${SSH_DIR}")" \
+            "6" "$(printf '%-44s [%s]' 'Standard-Key'        "${DEFAULT_KEY:--}")" \
+            "7" "$(printf '%-68s%s'   'Alias einrichten'     '[a]')" \
+            "0" "Zurueck") || return
 
         local val
         case "$choice" in
