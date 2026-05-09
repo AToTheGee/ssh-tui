@@ -113,7 +113,9 @@ last_modified() {
 tui() {
     local type="$1"; shift
     if [[ "$TUI_TOOL" == "dialog" ]]; then
-        dialog --colors --backtitle "🔐  ${APP} v${VERSION}" \
+        # --keep-tite: verhindert Wechsel in Alternate Screen Buffer (smcup/rmcup)
+        # dadurch bleibt der Banner im Hintergrund sichtbar (wie in WSL/xterm)
+        dialog --keep-tite --colors --backtitle "${APP} v${VERSION}" \
             --"$type" "$@" 3>&1 1>&2 2>&3
     else
         whiptail --"$type" "$@" 3>&1 1>&2 2>&3
