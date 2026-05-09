@@ -17,6 +17,14 @@
 
 set -uo pipefail   # kein -e: dialog/whiptail Cancel → exit 1, gezielt behandelt
 
+# ── Locale sicherstellen (Pflicht fuer Emoji / UTF-8 Output) ─────────────────
+# Wird vor allem in minimalen Server-Installationen (Ubuntu Server, Kali WSL)
+# benoetigt, wo LANG nicht gesetzt oder nicht UTF-8 ist.
+if [[ "${LANG:-}" != *UTF-8* && "${LC_ALL:-}" != *UTF-8* ]]; then
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+fi
+
 # ── ANSI Farben & Stile ───────────────────────────────────────
 R=$'\033[0m'
 B=$'\033[1m'
@@ -123,6 +131,72 @@ tui() {
 }
 
 # ═══════════════════════════════════════════════════════════════
+# UNICODE / EMOJI DIAGNOSE
+# ═══════════════════════════════════════════════════════════════
+
+check_unicode_support() {
+    local issues=() hints=()
+    local cur_lang="${LANG:-}" cur_lc="${LC_ALL:-}"
+
+    # 1. Locale UTF-8?
+    if [[ "$cur_lang" != *UTF-8* && "$cur_lc" != *UTF-8* ]]; then
+        issues+=("Keine UTF-8 Locale aktiv  (LANG=${cur_lang:-nicht gesetzt})")
+        hints+=("sudo locale-gen en_US.UTF-8 && sudo update-locale LANG=en_US.UTF-8")
+        hints+=("Oder temporaer fuer diese Session: export LANG=C.UTF-8 LC_ALL=C.UTF-8")
+    fi
+
+    # 2. locales-Paket vorhanden?
+    if command -v locale &>/dev/null; then
+        if ! locale -a 2>/dev/null | grep -qi 'utf'; then
+            issues+=("Keine UTF-8-Locales generiert")
+            hints+=("sudo apt-get install -y locales && sudo locale-gen en_US.UTF-8")
+        fi
+    fi
+
+    # 3. Noto Emoji Font (relevant fuer Sixel/grafische Terminals)
+    if command -v fc-list &>/dev/null; then
+        if ! fc-list 2>/dev/null | grep -qi 'noto.*emoji\|emoji'; then
+            issues+=("Keine Emoji-Schrift installiert (optional, relevant nur fuer GUI-Terminals)")
+            hints+=("sudo apt-get install -y fonts-noto-color-emoji")
+        fi
+    fi
+
+    [[ ${#issues[@]} -eq 0 ]] && return 0
+
+    echo ""
+    echo -e "${C_YLW}${B}  ╔══════════════════════════════════════════════════════════╗${R}"
+    echo -e "${C_YLW}${B}  ║  ⚠   Unicode/Emoji-Unterstuetzung eingeschraenkt        ║${R}"
+    echo -e "${C_YLW}${B}  ╚══════════════════════════════════════════════════════════╝${R}"
+    echo ""
+    for issue in "${issues[@]}"; do
+        echo -e "  ${C_YLW}•${R} $issue"
+    done
+    echo ""
+    echo -e "  ${C_CYN}${B}Empfohlene Befehle fuer Ubuntu/Debian/Kali:${R}"
+    echo ""
+    echo -e "  ${C_GRY}# 1. Locale-Paket + UTF-8 einrichten${R}"
+    echo -e "  ${C_GRN}sudo apt-get update && sudo apt-get install -y locales${R}"
+    echo -e "  ${C_GRN}sudo locale-gen en_US.UTF-8${R}"
+    echo -e "  ${C_GRN}sudo update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8${R}"
+    echo ""
+    echo -e "  ${C_GRY}# 2. Emoji-Font (optional, fuer Sixel/GUI-Terminals)${R}"
+    echo -e "  ${C_GRN}sudo apt-get install -y fonts-noto-color-emoji fontconfig${R}"
+    echo -e "  ${C_GRN}sudo fc-cache -fv${R}"
+    echo ""
+    echo -e "  ${C_GRY}# 3. Locale sofort fuer aktuelle Session aktivieren${R}"
+    echo -e "  ${C_GRN}export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8${R}"
+    echo ""
+    echo -e "  ${C_GRY}# 4. Fuer WSL: In /etc/wsl.conf sicherstellen:${R}"
+    echo -e "  ${C_GRN}[interop]${R}"
+    echo -e "  ${C_GRN}appendWindowsPath = true${R}"
+    echo ""
+    echo -ne "  ${C_CYN}Weiter trotzdem starten? [j/N]: ${R}"
+    local ans; read -r ans
+    [[ "$ans" =~ ^[jJyY]$ ]] || exit 0
+    echo ""
+}
+
+# ═══════════════════════════════════════════════════════════════
 # ABHÄNGIGKEITEN
 # ═══════════════════════════════════════════════════════════════
 
@@ -139,6 +213,9 @@ check_dependencies() {
     else
         missing+=("dialog")
     fi
+
+    # Emoji-/Unicode-Unterstützung prüfen und Hinweis ausgeben
+    check_unicode_support
 
     [[ ${#missing[@]} -eq 0 ]] && return 0
 
