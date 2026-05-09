@@ -1,0 +1,10 @@
+# Alle Textdateien mit LF speichern (Unix-Zeilenenden)
+* text=auto eol=lf
+
+# Shell-Skripte explizit als LF erzwingen
+*.sh text eol=lf
+
+# Windows-spezifische Dateien dürfen CRLF behalten
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
