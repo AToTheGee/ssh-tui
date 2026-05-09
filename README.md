@@ -159,6 +159,5 @@ git push origin feature/mein-feature
 ```
 
 ---
-
-Made with ❤️ and too many SSH keys.
-
+Made with (❤️=emjay) and too many SSH keys, too many servers, and a desire for a better terminal experience.
+Happy SSHing! 🚀 
