@@ -44,25 +44,6 @@
 | `dialog` **oder** `whiptail` | TUI-Menüs | ✅ (wird ggf. installiert) |
 | `pbcopy` / `xclip` / `xsel` | Clipboard | ➖ optional |
 
-### Manuelle Installation (falls benötigt)
-
-```bash
-# macOS (Homebrew)
-brew install dialog
-
-# Debian / Ubuntu
-sudo apt install dialog
-
-# Fedora / RHEL
-sudo dnf install dialog
-
-# Arch Linux
-sudo pacman -S dialog
-
-# openSUSE
-sudo zypper install dialog
-```
-
 ---
 
 ## 🚀 Quickstart
@@ -85,6 +66,27 @@ Beim **ersten Start** wird ein kurzes Setup durchgeführt:
 2. ❓ Du wirst gefragt, ob du diesen Ordner verwenden möchtest (oder einen anderen angibst)
 3. 🔑 Alle vorhandenen SSH-Keys werden mit Fingerprint aufgelistet
 4. ✅ Konfiguration wird in `~/.config/ssh-tui/config` gespeichert
+
+---
+
+### Manuelle Installation (falls benötigt)
+
+```bash
+# macOS (Homebrew)
+brew install dialog
+
+# Debian / Ubuntu
+sudo apt install dialog
+
+# Fedora / RHEL
+sudo dnf install dialog
+
+# Arch Linux
+sudo pacman -S dialog
+
+# openSUSE
+sudo zypper install dialog
+```
 
 ---
 
@@ -159,5 +161,5 @@ git push origin feature/mein-feature
 ```
 
 ---
-Made with (❤️=emjay) and too many SSH keys, too many servers, and a desire for a better terminal experience.
+Made with (❤️) and too many SSH keys, too many servers, and a desire for a better terminal experience.
 Happy SSHing! 🚀 

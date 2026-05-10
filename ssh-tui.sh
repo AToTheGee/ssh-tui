@@ -121,13 +121,50 @@ last_modified() {
 tui() {
     local type="$1"; shift
     if [[ "$TUI_TOOL" == "dialog" ]]; then
-        # --keep-tite: verhindert Wechsel in Alternate Screen Buffer (smcup/rmcup)
-        # dadurch bleibt der Banner im Hintergrund sichtbar (wie in WSL/xterm)
-        dialog --keep-tite --colors --backtitle "${APP} v${VERSION}" \
+        dialog --colors --backtitle "${APP} v${VERSION}" \
             --"$type" "$@" 3>&1 1>&2 2>&3
     else
         whiptail --"$type" "$@" 3>&1 1>&2 2>&3
     fi
+}
+
+setup_dialog_theme() {
+    local tmprc
+    tmprc="$(mktemp /tmp/dialogrc.XXXXXX)"
+    cat > "$tmprc" << 'DIALOGRC_EOF'
+screen_color = (WHITE,BLACK,OFF)
+shadow_color = (BLACK,BLACK,ON)
+dialog_color = (WHITE,BLACK,OFF)
+title_color = (CYAN,BLACK,ON)
+border_color = (CYAN,BLACK,ON)
+border2_color = (CYAN,BLACK,ON)
+button_active_color = (BLACK,CYAN,ON)
+button_inactive_color = (WHITE,BLACK,OFF)
+button_key_active_color = (BLACK,CYAN,ON)
+button_key_inactive_color = (CYAN,BLACK,OFF)
+button_label_active_color = (BLACK,CYAN,ON)
+button_label_inactive_color = (WHITE,BLACK,OFF)
+menubox_color = (WHITE,BLACK,OFF)
+menubox_border_color = (CYAN,BLACK,ON)
+menubox_border2_color = (CYAN,BLACK,ON)
+item_color = (WHITE,BLACK,OFF)
+item_selected_color = (BLACK,CYAN,ON)
+tag_color = (CYAN,BLACK,ON)
+tag_selected_color = (BLACK,CYAN,ON)
+tag_key_color = (CYAN,BLACK,OFF)
+tag_key_selected_color = (BLACK,CYAN,ON)
+inputbox_color = (WHITE,BLACK,OFF)
+inputbox_border_color = (CYAN,BLACK,ON)
+inputbox_border2_color = (CYAN,BLACK,ON)
+searchbox_color = (WHITE,BLACK,OFF)
+searchbox_title_color = (CYAN,BLACK,ON)
+searchbox_border_color = (CYAN,BLACK,ON)
+position_indicator_color = (CYAN,BLACK,ON)
+DIALOGRC_EOF
+    export DIALOGRC="$tmprc"
+    # Cleanup beim Beenden
+    # shellcheck disable=SC2064
+    trap "rm -f '$tmprc'" EXIT
 }
 
 # ═══════════════════════════════════════════════════════════════
@@ -299,12 +336,12 @@ menu_agent() {
     while true; do
         local choice
         choice=$(tui menu "SSH-Agent" 18 86 6 \
-            "1" "📊  $(printf '%-64s%s' 'Status anzeigen'           '[i]')" \
-            "2" "🟢  $(printf '%-64s%s' 'Agent starten'             '[s]')" \
-            "3" "➕  $(printf '%-64s%s' 'Key zum Agent hinzufuegen' '[a]')" \
-            "4" "📋  $(printf '%-64s%s' 'Geladene Keys anzeigen'    '[l]')" \
-            "5" "🔧  $(printf '%-64s%s' 'Auto-Load konfigurieren'   '[c]')" \
-            "6" "🔴  $(printf '%-64s%s' 'Agent stoppen'             '[x]')" \
+            "1" "📊  Status anzeigen" \
+            "2" "🟢  Agent starten" \
+            "3" "➕  Key zum Agent hinzufuegen" \
+            "4" "📋  Geladene Keys anzeigen" \
+            "5" "🔧  Auto-Load konfigurieren" \
+            "6" "🔴  Agent stoppen" \
             "0" "    Zurueck") || return
         case "$choice" in
             1) agent_status          ;;
@@ -594,14 +631,14 @@ menu_main() {
         show_banner
         local choice
         choice=$(tui menu "Hauptmenue" 20 86 8 \
-            "1" "🔑  $(printf '%-64s%s' 'SSH-Keys verwalten'    '[k]')" \
-            "2" "🖥  $(printf '%-64s%s' 'Server-Liste'          '[s]')" \
-            "3" "🚀  $(printf '%-64s%s' 'Verbinden'             '[v]')" \
-            "4" "✨  $(printf '%-64s%s' 'Neuen Key generieren'  '[g]')" \
-            "5" "🌐  $(printf '%-64s%s' 'known_hosts verwalten' '[h]')" \
-            "6" "🤖  $(printf '%-64s%s' 'SSH-Agent'             '[a]')" \
-            "7" "🔧  $(printf '%-64s%s' 'Einstellungen'         '[e]')" \
-            "0" "🚪  $(printf '%-64s%s' 'Beenden'               '[q]')") || break
+            "1" "🔑  SSH-Keys verwalten" \
+            "2" "🖥  Server-Liste" \
+            "3" "🚀  Verbinden" \
+            "4" "✨  Neuen Key generieren" \
+            "5" "🌐  known_hosts verwalten" \
+            "6" "🤖  SSH-Agent" \
+            "7" "🔧  Einstellungen" \
+            "0" "🚪  Beenden") || break
         case "$choice" in
             1) menu_keys     ;;
             2) menu_servers  ;;
@@ -625,11 +662,11 @@ menu_keys() {
     while true; do
         local choice
         choice=$(tui menu "SSH-Keys verwalten" 16 86 6 \
-            "1" "📋  $(printf '%-64s%s' 'Alle Keys auflisten'     '[l]')" \
-            "2" "🔍  $(printf '%-64s%s' 'Key pruefen / testen'    '[p]')" \
-            "3" "📤  $(printf '%-64s%s' 'Key auf Server deployen' '[d]')" \
-            "4" "📎  $(printf '%-64s%s' 'Public Key kopieren'     '[c]')" \
-            "5" "🗑️  $(printf '%-64s%s' 'Key loeschen'            '[x]')" \
+            "1" "📋  Alle Keys auflisten" \
+            "2" "🔍  Key pruefen / testen" \
+            "3" "📤  Key auf Server deployen" \
+            "4" "📎  Public Key kopieren" \
+            "5" "🗑️  Key loeschen" \
             "0" "    Zurueck") || return
         case "$choice" in
             1) show_key_list_dialog ;;
@@ -852,10 +889,10 @@ menu_servers() {
         local count; count="$(count_servers)"
         local choice
         choice=$(tui menu "Server-Liste  (${count} Eintraege)" 16 86 5 \
-            "1" "📋  $(printf '%-64s%s' 'Alle Server anzeigen' '[l]')" \
-            "2" "➕  $(printf '%-64s%s' 'Server hinzufuegen'   '[n]')" \
-            "3" "📝  $(printf '%-64s%s' 'Server bearbeiten'    '[e]')" \
-            "4" "🗑️  $(printf '%-64s%s' 'Server loeschen'      '[x]')" \
+            "1" "📋  Alle Server anzeigen" \
+            "2" "➕  Server hinzufuegen" \
+            "3" "📝  Server bearbeiten" \
+            "4" "🗑️  Server loeschen" \
             "0" "    Zurueck") || return
         case "$choice" in
             1) show_server_list ;;
@@ -956,8 +993,8 @@ menu_connect() {
        grep -q -v '^#\|^[[:space:]]*$' "$SERVERS_FILE" 2>/dev/null; then
         local src
         src=$(tui menu "Verbinden" 12 86 3 \
-            "1" "🖥  $(printf '%-64s%s' 'Aus Server-Liste waehlen' '[l]')" \
-            "2" "📝  $(printf '%-64s%s' 'Manuell eingeben'         '[m]')" \
+            "1" "🖥  Aus Server-Liste waehlen" \
+            "2" "📝  Manuell eingeben" \
             "0" "    Zurueck") || return
         case "$src" in
             1)
@@ -1012,10 +1049,10 @@ menu_connect() {
 menu_generate() {
     local key_type
     key_type=$(tui menu "Key-Typ waehlen" 14 86 4 \
-        "ed25519" "🔐  $(printf '%-64s' 'Ed25519   -- modern, kompakt, empfohlen')" \
-        "rsa"     "🔑  $(printf '%-64s' 'RSA 4096  -- klassisch, weit verbreitet')" \
-        "ecdsa"   "🔷  $(printf '%-64s' 'ECDSA     -- Elliptische Kurve (NIST)')" \
-        "dsa"     "⛔  $(printf '%-64s' 'DSA       -- veraltet, nicht empfohlen')") || return
+        "ed25519" "🔐  Ed25519   -- modern, kompakt, empfohlen" \
+        "rsa"     "🔑  RSA 4096  -- klassisch, weit verbreitet" \
+        "ecdsa"   "🔷  ECDSA     -- Elliptische Kurve (NIST)" \
+        "dsa"     "⛔  DSA       -- veraltet, nicht empfohlen") || return
 
     local default_name="${KEY_PREFIX}${key_type}${KEY_SUFFIX}"
     local key_name
@@ -1061,8 +1098,8 @@ menu_hosts() {
             count=$(grep -v '^#\|^[[:space:]]*$' "$hosts_file" 2>/dev/null | wc -l | tr -d ' \t')
         local choice
         choice=$(tui menu "known_hosts  (${count} Eintraege)" 14 86 3 \
-            "1" "📋  $(printf '%-64s%s' 'Tabellarisch anzeigen' '[l]')" \
-            "2" "🗑️  $(printf '%-64s%s' 'Eintrag entfernen'     '[x]')" \
+            "1" "📋  Tabellarisch anzeigen" \
+            "2" "🗑️  Eintrag entfernen" \
             "0" "    Zurueck") || return
         case "$choice" in
             1) show_known_hosts_table "$hosts_file" ;;
@@ -1130,7 +1167,7 @@ menu_settings() {
             "4" "🏷  $(printf '%-40s%22s' 'Key-Suffix'          "[${KEY_SUFFIX:--}]")" \
             "5" "📁  $(printf '%-40s%22s' 'SSH-Verzeichnis'     "[${SSH_DIR}]")" \
             "6" "🔑  $(printf '%-40s%22s' 'Standard-Key'        "[${DEFAULT_KEY:--}]")" \
-            "7" "🔗  $(printf '%-40s%22s' 'Alias einrichten'    '[a]')" \
+            "7" "🔗  $(printf '%-40s%22s' 'Alias einrichten'    '')" \
             "0" "    Zurueck") || return
 
         local val
@@ -1260,6 +1297,7 @@ main() {
     check_dependencies
     load_config
     agent_load_env
+    [[ "$TUI_TOOL" == "dialog" ]] && setup_dialog_theme
 
     if [[ ! -f "$CONFIG_FILE" ]]; then
         first_run_setup
