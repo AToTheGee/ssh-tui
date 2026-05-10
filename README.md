@@ -1,4 +1,4 @@
-# 🔐 ssh-tui
+# 🔐 ssh-tui - Terminal UI für macOS & Linux
 
 ```text
  _______ _______ ___ ___        _______ ___ ___ ___ 
@@ -9,8 +9,6 @@
 |::.. . |::.. . |::.|:. |        |::.| |::.. . |::.|
 `-------`-------`--- ---'        `---' `-------`---'        
 ```
-
-**🔐 SSH Key & Host Manager — Terminal UI für macOS & Linux**
 
 ![bash](https://img.shields.io/badge/bash-%E2%89%A5%203.2-4EAA25?style=flat-square&logo=gnubash&logoColor=white)
 ![platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey?style=flat-square&logo=apple)
@@ -162,4 +160,4 @@ git push origin feature/mein-feature
 
 ---
 Made with (❤️) and too many SSH keys, too many servers, and a desire for a better terminal experience.
-Happy SSHing! 🚀 
+Happy SSHing! 🚀
