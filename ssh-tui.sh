@@ -1124,13 +1124,13 @@ menu_settings() {
     while true; do
         local choice
         choice=$(tui menu "Einstellungen" 24 86 8 \
-            "1" "👤  $(printf '%-40s [%s]' 'Standard-Benutzer'   "${DEFAULT_USER:--}")" \
-            "2" "🖥  $(printf '%-40s [%s]' 'Standard-Host'       "${DEFAULT_HOST:--}")" \
-            "3" "🏷  $(printf '%-40s [%s]' 'Key-Praefix'         "${KEY_PREFIX:--}")" \
-            "4" "🏷  $(printf '%-40s [%s]' 'Key-Suffix'          "${KEY_SUFFIX:--}")" \
-            "5" "📁  $(printf '%-40s [%s]' 'SSH-Verzeichnis'     "${SSH_DIR}")" \
-            "6" "🔑  $(printf '%-40s [%s]' 'Standard-Key'        "${DEFAULT_KEY:--}")" \
-            "7" "🔗  $(printf '%-64s%s'   'Alias einrichten'     '[a]')" \
+            "1" "👤  $(printf '%-40s%22s' 'Standard-Benutzer'   "[${DEFAULT_USER:--}]")" \
+            "2" "🖥  $(printf '%-40s%22s' 'Standard-Host'       "[${DEFAULT_HOST:--}]")" \
+            "3" "🏷  $(printf '%-40s%22s' 'Key-Praefix'         "[${KEY_PREFIX:--}]")" \
+            "4" "🏷  $(printf '%-40s%22s' 'Key-Suffix'          "[${KEY_SUFFIX:--}]")" \
+            "5" "📁  $(printf '%-40s%22s' 'SSH-Verzeichnis'     "[${SSH_DIR}]")" \
+            "6" "🔑  $(printf '%-40s%22s' 'Standard-Key'        "[${DEFAULT_KEY:--}]")" \
+            "7" "🔗  $(printf '%-40s%22s' 'Alias einrichten'    '[a]')" \
             "0" "    Zurueck") || return
 
         local val
